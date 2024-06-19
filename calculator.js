@@ -25,11 +25,10 @@ const clear = document.querySelector('[data-action="clear"]');
 const equals = document.querySelector('[data-action="equals"]');
 const undo = document.querySelector('[data-action="undo"]');
 
-console.log(resultEl)
-
 
 function calculate(expression, symbol) {
     let indexes = [] 
+    if(!expression){return}
     expression.forEach((operand, index) =>{
         if(operand === symbol) {
             indexes.push(index)
@@ -56,7 +55,8 @@ function calculate(expression, symbol) {
                 break
             default: return
         }
-        
+
+
         console.log(expression)
 
     })
@@ -76,13 +76,25 @@ function evaluate(expression) {
         calculate(expression,i);
     })
 
+    if(expression.toString() === 'Infinity'){
+        display = '∞'
+        history = '0'
+        resultEl.value = display
+        return
+    }
+    
+
 
     return expression
 
 }
 
 function endsWithChar(expression) {
-    return '+-/*%'.includes(expression[expression.length-1])
+    if (expression) {
+        return '+-/*%'.includes(expression[expression.length-1])
+    } else {
+        return
+    }
 }
 
 function round2dec(num) {
@@ -92,11 +104,19 @@ function round2dec(num) {
 
 
 function writeNumber(event) {
-    let value;
+    let value = null;
+    let target = event.target;
     
     if (event.type === 'click') {
-        console.log(event.target)
-        value = event.target.getAttribute('data-number');
+       if(target.hasAttribute('data-number')){
+        value = target.getAttribute('data-number');
+       } else if(target.parentElement.hasAttribute('data-number')){
+        value = target.parentElement.getAttribute('data-number');
+       } else if (target.parentElement.parentElement.hasAttribute('data-number')) {
+        value = target.parentElement.parentElement.getAttribute('data-number')
+       }
+       
+        
         
     } else if (event.type === 'keydown') {
         value = event.key;
@@ -112,10 +132,19 @@ function writeNumber(event) {
 
 number.forEach(button => {
     button.addEventListener('click', writeNumber);
-}); // in case of click on a number span, data-attribute is not defined
+});
 
 function doOperation(event) {
+    let lastChar = history[history.length - 1]
     let symbol
+    console.log(lastChar)
+
+    if(lastChar === undefined){
+        console.log('abort')
+        return
+    } else if(lastChar === '.') {
+        remove()
+    }
 
     if(event.type === 'click') {
         symbol = event.target.getAttribute('data-operation')
@@ -145,6 +174,7 @@ operation.forEach(operand => {
 operation.forEach(operand => {
     operand.onclick = function() {
         let symbol = operand.getAttribute('data-operation')
+        if(!history){return}
 
         if(symbol === '+' || symbol === '-') {
             display = evaluate(history).toString()
@@ -186,7 +216,7 @@ clear.onclick = () => clearAll()
 
 undo.onclick = () => remove()
 
-resultEl.addEventListener('keydown',function(e) {
+document.addEventListener('keydown',function(e) {
     e.preventDefault()
     let key = e.key
 
@@ -202,19 +232,21 @@ resultEl.addEventListener('keydown',function(e) {
         remove()
     }
 
-    else if (key === 'c') {
+    else if (key === 'c' || key === 'с' || key === 'Escape') {
         clearAll()
     }
 
     else if (key === '=' || key === 'Enter') {
         doEquals()
     }
-    else { return }
+    else {
+        console.log(key) 
+        return }
 })
 
 
 
-function remove() { // fix error when deleting the last number
+function remove() {
 
     if (display !== '') {
         display = display.slice(0, -1);
@@ -225,7 +257,7 @@ function remove() { // fix error when deleting the last number
     }
 
 
-    lastNumber = history.match(/\d+(\.\d*)?/g)
+    let lastNumber = history.match(/\d+(\.\d*)?/g)
     console.log(lastNumber)
 
     if (lastNumber === null) {
