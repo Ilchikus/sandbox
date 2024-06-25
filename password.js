@@ -10,6 +10,9 @@ const UpperBox = document.getElementById('uppercase')
 const NumbersBox = document.getElementById('numbers')
 const SymbolsBox = document.getElementById('symbols')
 const progressbar = document.getElementById('progressbar')
+const copy = document.getElementById('copy')
+const notificationMessage = document.getElementById('notificationMessage')
+const addInput = document.getElementById('addInput')
 const lower = "abcdefghijklmnoprstquvwxyz"
 const upper = lower.toUpperCase()
 const numbers = "01234567890"
@@ -26,15 +29,14 @@ let length = 12
 let progressWidth = calculateProgress()
 let password = ''
 let startTime, elapsedTime
+const Includes = [22, 'safd/']
+const Excludes = []
+
+initialize()
 
 function calculateProgress() {
     return Math.floor((length - range.min) / (range.max - range.min) * 100).toString() + '%'
 }
-
-
-
-console.log(range.min)
-console.log(range.max)
 
 function updateUi() {
     range.value = length
@@ -57,13 +59,11 @@ range.addEventListener('input', function() {
 }
 )
 
-
-console.log(allowedKeys.includes('Arrow'))
-
 number.addEventListener('keydown', function(e) {
     key = e.key
     if(!allowedKeys.includes(key)) {
         e.preventDefault()
+        notification('Only numbers allowed', 'warning')
         return
     }
 })
@@ -85,12 +85,12 @@ function writeInput() {
         if(parseInt(number.value) <  parseInt(range.min)) {
             length = range.min
             number.value = length
-            console.log(length)
+            notification(`Password cannot be shorter then ${range.min} characters`, 'warning')
         }
         if(parseInt(number.value) >  parseInt(range.max)) {
             length = range.max
             number.value = length
-            console.log(length)
+            notification(`Password cannot be longer than ${range.max} characters`, 'warning')
         }
         if(parseInt(number.value) >= parseInt(range.min) && parseInt(number.value) <= parseInt(range.max)) {
             length = number.value
@@ -109,7 +109,10 @@ function generate () {
             allChars.push(charSet[index])
         }
     });
-    console.log(allChars)
+    if(allChars.length === 0){
+        notification('Select at least 1 characters set', 'warning')
+        return
+    }
 
     for (i = 0; i < length; i++) {
         let currentSet = allChars[Math.floor(Math.random() * allChars.length)]
@@ -119,6 +122,7 @@ function generate () {
 
     timeLeft = duration
     formatTime()
+    notificationMessage.classList.add('hidden')
     timerMessage.classList.remove('hidden')
     startTime = null
     clearInterval(intervalId)
@@ -128,6 +132,7 @@ function generate () {
 
 generateButton.addEventListener('click', function() {
     generate()
+    if(password.length === 0) return
     output.textContent = password
 })
 
@@ -151,13 +156,157 @@ function countdown() {
         timerMessage.classList.add('hidden')
         timer.textContent = '0:00'
     }
-    timerProgress()
-}
-
-function timerProgress() {
     let progressValue = timeLeft/duration*100
     progressbar.style.width = progressValue + '%'
 }
+
+copy.addEventListener('click', () => {
+    if(password.length === 0) {
+        notification('Password is empty', 'warning')
+        return
+    }
+    navigator.clipboard.writeText(output.textContent)
+    console.log('copied')
+    document.getElementById('copyIcon').classList.add('hidden')
+    document.getElementById('checkIcon').classList.remove('hidden')
+    notification('Password has been copied to the clipboard', 'success')
+    setTimeout(() => {
+        document.getElementById('copyIcon').classList.remove('hidden')
+        document.getElementById('checkIcon').classList.add('hidden')
+    },2000)
+
+})
+
+function notification(message, type = 'default') {
+    const applyType = (type) => {
+        switch(type) {
+            case 'default': 
+                break
+            case 'success':
+                notificationMessage.classList.add('text-green-600')
+                break
+            case 'warning':
+                notificationMessage.classList.add('text-red-600')
+                break
+        }
+    }
+    notificationMessage.classList.remove('text-green-600', 'text-red-600')
+    applyType(type)
+    const wasHidden = timerMessage.classList.contains('hidden')
+    timerMessage.classList.add('hidden')
+    notificationMessage.textContent = ''
+    notificationMessage.textContent = message
+    notificationMessage.classList.remove('hidden')
+    setTimeout(() => {
+        notificationMessage.textContent = ''
+        notificationMessage.classList.add('hidden')
+        if(!wasHidden) {
+            timerMessage.classList.remove('hidden')
+        }
+    },2000)
+}
+
+function toggleModal() {
+    document.getElementById('modal').classList.toggle('hidden')
+    addInput.focus()
+}
+
+function applyRules(array, containerId) {
+    let value = addInput.value
+    let futureIncludes = [...Includes]
+    futureIncludes.push(value)
+    let futureLenght = futureIncludes.reduce((accumulator, current) => {
+        return accumulator.toString() + current.toString()
+    }, '')
+    if(futureLenght.length > length) {
+        notification('Includes length cannot be greater than password lenght', 'warning')
+        return
+    }
+    if (value.length >= length) {
+        notification('Include value cannot be greater or equal to password lenght', 'warning')
+        return
+    }
+    array.push(value)
+
+    createTag(containerId, value)
+    cancelRules()
+    futureIncludes = []
+    console.log(Includes)
+
+}
+
+function cancelRules() {
+    addInput.value = ''
+    toggleModal()
+}
+
+
+function removeTag(event) {
+    console.log(event)
+    if(event.target.getAttribute('type')){
+        element = event.target
+    } else if (event.target.parentElement.getAttribute('type')){
+        element = event.target.parentElement
+    } else if (event.target.parentElement.parentElement.getAttribute('type')) {
+        element = event.target.parentElement.parentElement
+    }
+    type = element.getAttribute('type')
+
+
+    container = document.getElementById('includesContainer')
+    tags = container.querySelectorAll('[id = rulesTag]')
+    index = Array.from(tags).indexOf(element)
+    Includes.splice(index, 1)
+    tags[index].remove(1)
+    console.log(Includes)
+}
+
+function createTag(containerId, value) {
+    let container = document.getElementById(containerId)
+    let tags = container.querySelectorAll('[id = rulesTag]')
+    let lastElement = tags[tags.length - 1]
+    let current = document.createElement("div")
+
+    current.setAttribute('type', containerId)
+    current.id = 'rulesTag'
+
+    current.classList.add('h-6', 'inline-flex', 'items-center', 'px-2', 'rounded', 'bg-blue-600', 'text-white', 'group', 'cursor-pointer')
+    current.innerHTML = `
+                        <span>${value}</span>
+                        <svg class="w-0 h-4 stroke-white group-hover:w-4 group-hover:ml-1 transition-all duration-200" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>`
+    current.onclick = removeTag
+    if(lastElement) {
+        lastElement.insertAdjacentElement('afterend',current)
+    } else {
+        container.insertBefore(current,container.firstChild)
+    }
+}
+
+function initialize() {
+    Includes.forEach((element) => createTag('includesContainer', element))
+}
+
+addInput.addEventListener('keydown', (event) => {
+    console.log(event.key)
+    if(event.key === 'Enter') {applyRules(Includes,'includesContainer')}
+    if(event.key === 'Escape') {
+        event.preventDefault()
+        cancelRules()
+    }
+})
+
+
+
+
+
+
+
+
+
+
 
 
 
