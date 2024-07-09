@@ -28,12 +28,15 @@ const undo = document.querySelector('[data-action="undo"]');
 
 function calculate(expression, symbol) {
     let indexes = [] 
-    if(!expression){return}
+
+    if (!expression) return
+
     expression.forEach((operand, index) =>{
+
+        
         if(operand === symbol) {
             indexes.push(index)
         }
-        else return
     })
 
     indexes.reverse().forEach((i) => {
@@ -62,10 +65,12 @@ function calculate(expression, symbol) {
     })
 }
 
+const OPERATORS_REGEXP = /\d+(\.\d+)?|[+\-*/%]/g
+
 function evaluate(expression) {
     console.log(expression)
     console.log(history)
-    expression = expression.match(/\d+(\.\d+)?|[+\-*/%]/g)
+    expression = expression.match(OPERATORS_REGEXP)
     
 
     if(endsWithChar(expression)) {
@@ -100,8 +105,6 @@ function endsWithChar(expression) {
 function round2dec(num) {
     return Math.round((num + Number.EPSILON) * 100) / 100
 }
-
-
 
 function writeNumber(event) {
     let value = null;
@@ -174,9 +177,10 @@ operation.forEach(operand => {
 operation.forEach(operand => {
     operand.onclick = function() {
         let symbol = operand.getAttribute('data-operation')
-        if(!history){return}
 
-        if(symbol === '+' || symbol === '-') {
+        if (!history) return
+
+        if (symbol === '+' || symbol === '-') {
             display = evaluate(history).toString()
             resultEl.value = display
         }
@@ -265,7 +269,7 @@ function remove() {
         return
     }
 
-    display = lastNumber[lastNumber.length -1]
+    display = lastNumber.at(-1)
 
     
     historyEl.textContent = history;

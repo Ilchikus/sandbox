@@ -12,13 +12,13 @@ const SymbolsBox = document.getElementById('symbols')
 const progressbar = document.getElementById('progressbar')
 const copy = document.getElementById('copy')
 const notificationMessage = document.getElementById('notificationMessage')
-const addInput = document.getElementById('addInput')
+const addTagName = document.getElementById('addInput')
 const lower = "abcdefghijklmnoprstquvwxyz"
 const upper = lower.toUpperCase()
 const numbers = "01234567890"
 const symbols = "!@#$%^&*()-_=+"
 const chars = `~\`±§,<.>/?\\|{[]}`
-const allowedKeys = ['0','1','2','3','4','5','6','7','8','9','ArrowUp', 'ArrowDown', 'Control', 'Shift', 'ArrowLeft', 'ArrowRight', 'Backspace']
+const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'ArrowUp', 'ArrowDown', 'Control', 'Shift', 'ArrowLeft', 'ArrowRight', 'Backspace']
 let allChars = []
 const charSet = [lower, upper, numbers, symbols]
 let timerId, intervalId
@@ -29,10 +29,8 @@ let length = 12
 let progressWidth = calculateProgress()
 let password = ''
 let startTime, elapsedTime
-const Includes = [22, 'safd/']
-const Excludes = []
+const notificationTimeout = 3000
 
-initialize()
 
 function calculateProgress() {
     return Math.floor((length - range.min) / (range.max - range.min) * 100).toString() + '%'
@@ -53,15 +51,15 @@ function updateRange() {
 
 updateUi()
 
-range.addEventListener('input', function() {
+range.addEventListener('input', function () {
     length = range.value
     updateUi()
 }
 )
 
-number.addEventListener('keydown', function(e) {
+number.addEventListener('keydown', function (e) {
     key = e.key
-    if(!allowedKeys.includes(key)) {
+    if (!allowedKeys.includes(key)) {
         e.preventDefault()
         notification('Only numbers allowed', 'warning')
         return
@@ -70,29 +68,29 @@ number.addEventListener('keydown', function(e) {
 
 number.addEventListener('focus', writeInput)
 number.addEventListener('blur', writeInput)
-number.addEventListener('keydown', function(e) {
-    if(e.key === 'Enter') {
+number.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
         writeInput()
     }
 })
 
 
 function writeInput() {
-    if(number.value === '') {
+    if (number.value === '') {
         length = range.min
         updateRange()
     } else {
-        if(parseInt(number.value) <  parseInt(range.min)) {
+        if (parseInt(number.value) < parseInt(range.min)) {
             length = range.min
             number.value = length
             notification(`Password cannot be shorter then ${range.min} characters`, 'warning')
         }
-        if(parseInt(number.value) >  parseInt(range.max)) {
+        if (parseInt(number.value) > parseInt(range.max)) {
             length = range.max
             number.value = length
             notification(`Password cannot be longer than ${range.max} characters`, 'warning')
         }
-        if(parseInt(number.value) >= parseInt(range.min) && parseInt(number.value) <= parseInt(range.max)) {
+        if (parseInt(number.value) >= parseInt(range.min) && parseInt(number.value) <= parseInt(range.max)) {
             length = number.value
         }
         updateUi()
@@ -100,16 +98,16 @@ function writeInput() {
 }
 
 
-function generate () {
+function generate() {
     password = ''
     allChars = []
     let conditions = [LowerBox.checked, UpperBox.checked, NumbersBox.checked, SymbolsBox.checked]
-    conditions.forEach((condition,index) => {
-        if(condition) {
+    conditions.forEach((condition, index) => {
+        if (condition) {
             allChars.push(charSet[index])
         }
     });
-    if(allChars.length === 0){
+    if (allChars.length === 0) {
         notification('Select at least 1 characters set', 'warning')
         return
     }
@@ -119,6 +117,32 @@ function generate () {
         password += currentSet[Math.floor(Math.random() * parseInt(currentSet.length))]
     }
     console.log(password)
+
+    let includesSlots = []
+
+    includeTags.tags.forEach(element => {
+        includesSlots.push(element)
+    })
+
+    let availableSlots = []
+    let lenghtLeft = length - includesSlots.join('').length
+    for (i = 0; i < lenghtLeft; i++) {
+        availableSlots.push(null)
+    }
+
+    availableSlots = availableSlots.map(() => {
+        let currentSet = allChars[Math.floor(Math.random() * allChars.length)]
+        return currentSet[Math.floor(Math.random() * parseInt(currentSet.length))]
+    })
+
+    password = [...includesSlots, ...availableSlots]
+    console.log(password)
+    password.forEach((element, index) => {
+        let randomIndex = Math.floor(Math.random() * password.length);
+        [password[index], password[randomIndex]] = [password[randomIndex], password[index]];
+    })
+    password = password.join('')
+
 
     timeLeft = duration
     formatTime()
@@ -130,17 +154,17 @@ function generate () {
     intervalId = setInterval(countdown)
 }
 
-generateButton.addEventListener('click', function() {
+generateButton.addEventListener('click', function () {
     generate()
-    if(password.length === 0) return
+    if (password.length === 0) return
     output.textContent = password
 })
 
 function formatTime() {
     minutes = Math.floor(timeLeft / 60 / 1000)
     seconds = Math.floor(timeLeft / 1000) % 60
-    seconds = seconds.toString().padStart(2,0)
-    timer.textContent = minutes + ':' + seconds 
+    seconds = seconds.toString().padStart(2, 0)
+    timer.textContent = minutes + ':' + seconds
 }
 
 
@@ -156,12 +180,12 @@ function countdown() {
         timerMessage.classList.add('hidden')
         timer.textContent = '0:00'
     }
-    let progressValue = timeLeft/duration*100
+    let progressValue = timeLeft / duration * 100
     progressbar.style.width = progressValue + '%'
 }
 
 copy.addEventListener('click', () => {
-    if(password.length === 0) {
+    if (password.length === 0) {
         notification('Password is empty', 'warning')
         return
     }
@@ -173,14 +197,14 @@ copy.addEventListener('click', () => {
     setTimeout(() => {
         document.getElementById('copyIcon').classList.remove('hidden')
         document.getElementById('checkIcon').classList.add('hidden')
-    },2000)
+    }, notificationTimeout)
 
 })
 
 function notification(message, type = 'default') {
     const applyType = (type) => {
-        switch(type) {
-            case 'default': 
+        switch (type) {
+            case 'default':
                 break
             case 'success':
                 notificationMessage.classList.add('text-green-600')
@@ -200,103 +224,200 @@ function notification(message, type = 'default') {
     setTimeout(() => {
         notificationMessage.textContent = ''
         notificationMessage.classList.add('hidden')
-        if(!wasHidden) {
+        if (!wasHidden) {
             timerMessage.classList.remove('hidden')
         }
-    },2000)
+    }, notificationTimeout)
 }
 
-function toggleModal() {
-    document.getElementById('modal').classList.toggle('hidden')
-    addInput.focus()
-}
 
-function applyRules(array, containerId) {
-    let value = addInput.value
-    let futureIncludes = [...Includes]
-    futureIncludes.push(value)
-    let futureLenght = futureIncludes.reduce((accumulator, current) => {
-        return accumulator.toString() + current.toString()
-    }, '')
-    if(futureLenght.length > length) {
-        notification('Includes length cannot be greater than password lenght', 'warning')
-        return
+class Tag {
+    tags = [];
+    container;
+    tagId = "rulesTag"
+
+
+    constructor(initialValue, container) {
+        this.tags = initialValue
+        this.container = container
+        this.getInput().addEventListener('keydown', (event) => this.keydown(event))
     }
-    if (value.length >= length) {
-        notification('Include value cannot be greater or equal to password lenght', 'warning')
-        return
+
+    getContainer() {
+        return document.getElementById(this.container)
     }
-    array.push(value)
 
-    createTag(containerId, value)
-    cancelRules()
-    futureIncludes = []
-    console.log(Includes)
-
-}
-
-function cancelRules() {
-    addInput.value = ''
-    toggleModal()
-}
-
-
-function removeTag(event) {
-    console.log(event)
-    if(event.target.getAttribute('type')){
-        element = event.target
-    } else if (event.target.parentElement.getAttribute('type')){
-        element = event.target.parentElement
-    } else if (event.target.parentElement.parentElement.getAttribute('type')) {
-        element = event.target.parentElement.parentElement
+    getModal() {
+        const container = this.getContainer()
+        return container.querySelector('#modal')
     }
-    type = element.getAttribute('type')
 
-
-    container = document.getElementById('includesContainer')
-    tags = container.querySelectorAll('[id = rulesTag]')
-    index = Array.from(tags).indexOf(element)
-    Includes.splice(index, 1)
-    tags[index].remove(1)
-    console.log(Includes)
-}
-
-function createTag(containerId, value) {
-    let container = document.getElementById(containerId)
-    let tags = container.querySelectorAll('[id = rulesTag]')
-    let lastElement = tags[tags.length - 1]
-    let current = document.createElement("div")
-
-    current.setAttribute('type', containerId)
-    current.id = 'rulesTag'
-
-    current.classList.add('h-6', 'inline-flex', 'items-center', 'px-2', 'rounded', 'bg-blue-600', 'text-white', 'group', 'cursor-pointer')
-    current.innerHTML = `
-                        <span>${value}</span>
-                        <svg class="w-0 h-4 stroke-white group-hover:w-4 group-hover:ml-1 transition-all duration-200" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>`
-    current.onclick = removeTag
-    if(lastElement) {
-        lastElement.insertAdjacentElement('afterend',current)
-    } else {
-        container.insertBefore(current,container.firstChild)
+    getInput() {
+        const modal = this.getModal()
+        return modal.querySelector('#addInput')
     }
-}
 
-function initialize() {
-    Includes.forEach((element) => createTag('includesContainer', element))
-}
-
-addInput.addEventListener('keydown', (event) => {
-    console.log(event.key)
-    if(event.key === 'Enter') {applyRules(Includes,'includesContainer')}
-    if(event.key === 'Escape') {
-        event.preventDefault()
-        cancelRules()
+    getTags() {
+        const container = this.getContainer();
+        return container.querySelectorAll(`[id = ${this.tagId}]`)
     }
-})
+
+    add() {
+        let value = this.getInput().value
+        const futureLength = this.tags.join('').length + value.length
+
+        if (value.length === 0) {
+            notification('Type one or more character', 'warning')
+            return
+        }
+
+
+        console.log(this.tags)
+
+        if (this.tags.includes(value)) {
+            notification('This is already included', 'warning')
+            return
+        }
+
+        if (this.container === 'includesContainer') {
+            if (excludeTags.tags.includes(value)) {
+                notification('You can\'t include what needs to be exluded', 'warning')
+                return
+            }
+        }
+
+        if (this.container === 'excludesContainer') {
+            if (includeTags.tags.some(element => element.includes(value))) {
+                notification('You can\'t exclude what needs to be included', 'warning')
+                return
+            }
+        }
+
+
+
+        if (value.length > length) {
+            notification('Include value cannot be greater or equal to password lenght', 'warning')
+            return
+        }
+
+        if (futureLength > length) {
+            notification('Includes length cannot be greater than password lenght', 'warning')
+            return
+        }
+
+        this.tags.push(value)
+        this.renderTag(value)
+        this.getInput().value = ''
+        this.getModal().classList.add('hidden')
+
+
+    }
+
+    renderTag(value) {
+        let currentTags = this.getTags()
+        let lastElement = currentTags[currentTags.length - 1]
+        let newTag = document.createElement("div")
+
+        newTag.id = this.tagId
+        newTag.classList.add('h-6', 'inline-flex', 'items-center', 'px-2', 'rounded', 'bg-blue-600', 'text-white', 'group', 'cursor-pointer')
+        newTag.innerHTML = `
+            <span>${value}</span>
+            <svg class="w-0 h-4 stroke-white group-hover:w-4 group-hover:ml-1 transition-all duration-200" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>`
+        newTag.onclick = this.removeTag.bind(this)
+
+        if (lastElement) {
+            lastElement.insertAdjacentElement('afterend', newTag)
+        } else {
+            const container = this.getContainer()
+            container.insertBefore(newTag, container.firstChild)
+        }
+    }
+
+    clearAll() {
+        const tags = this.getTags()
+
+        tags.forEach((element) => {
+            element.remove()
+            console.log('im working')
+        })
+
+        this.tags = [];
+    }
+
+    closeModal() {
+        this.getInput().value = ''
+        this.getModal().classList.add('hidden')
+    }
+
+    toggleModal() {
+        this.getModal().classList.toggle('hidden')
+        this.getInput().focus()
+    }
+
+    removeTag(e) {
+        let current
+
+        if (e.target.id === this.tagId) {
+            current = e.target
+        } else if (e.target.parentElement.id === this.tagId) {
+            current = e.target.parentElement
+        } else if (e.target.parentElement.parentElement.id === this.tagId) {
+            current = e.target.parentElement.parentElement
+        }
+
+        const tags = this.getTags();
+        const currentIndex = Array.from(tags).indexOf(current)
+
+        tags[currentIndex].remove(1);
+
+        this.tags = this.tags.filter((_, index) => index !== currentIndex)
+    }
+
+    keydown(event) {
+        if (event.key === 'Enter') {
+            this.add()
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault()
+            this.closeModal()
+        }
+    }
+
+    initialize() {
+        this.tags = this.tags.map((element) => element.toString())
+        this.tags.forEach((element) => {
+            this.renderTag(element)
+        })
+
+    }
+
+    clearRules() {
+        this.getTags().forEach((element) => {
+            element.remove()
+            this.tags.pop()
+        })
+    }
+
+}
+
+
+const includeTags = new Tag(['ab', 12], 'includesContainer')
+const excludeTags = new Tag(["oO", '1lI'], 'excludesContainer')
+
+includeTags.initialize()
+excludeTags.initialize()
+
+
+
+
+
+
+
+
 
 
 
