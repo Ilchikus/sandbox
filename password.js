@@ -97,9 +97,7 @@ function writeInput() {
     }
 }
 
-
-function generate() {
-    password = ''
+function setCharSet() {
     allChars = []
     let conditions = [LowerBox.checked, UpperBox.checked, NumbersBox.checked, SymbolsBox.checked]
     conditions.forEach((condition, index) => {
@@ -111,39 +109,57 @@ function generate() {
         notification('Select at least 1 characters set', 'warning')
         return
     }
+}
 
-    for (i = 0; i < length; i++) {
-        let currentSet = allChars[Math.floor(Math.random() * allChars.length)]
-        password += currentSet[Math.floor(Math.random() * parseInt(currentSet.length))]
-    }
-    console.log(password)
-
-    let includesSlots = []
-
+function pushIncludes() {
     includeTags.tags.forEach(element => {
-        includesSlots.push(element)
+        password.push(element)
     })
 
-    let availableSlots = []
-    let lenghtLeft = length - includesSlots.join('').length
+    let lenghtLeft = length - password.join('').length
     for (i = 0; i < lenghtLeft; i++) {
-        availableSlots.push(null)
+        password.push(null)
     }
+}
 
-    availableSlots = availableSlots.map(() => {
-        let currentSet = allChars[Math.floor(Math.random() * allChars.length)]
-        return currentSet[Math.floor(Math.random() * parseInt(currentSet.length))]
-    })
+function containsAny(string, array) {
+    return array.some(element => string.includes(element))
+}
 
-    password = [...includesSlots, ...availableSlots]
-    console.log(password)
+function generate() {
+
+    let isValid = true
+
+    do {   
+        password = []    
+
+    setCharSet()
+    pushIncludes()
+
     password.forEach((element, index) => {
         let randomIndex = Math.floor(Math.random() * password.length);
         [password[index], password[randomIndex]] = [password[randomIndex], password[index]];
     })
+
+
+    password.forEach((element, index) => {
+        if (element == null) {
+            let currentSet = allChars[Math.floor(Math.random() * allChars.length)]
+            password[index] = currentSet[Math.floor(Math.random() * parseInt(currentSet.length))]
+        }
+
+    })
+
     password = password.join('')
 
+    setPasswordExpire()
 
+    isValid = !containsAny(password,excludeTags.tags)
+
+    } while (!isValid)
+}
+
+function setPasswordExpire() {
     timeLeft = duration
     formatTime()
     notificationMessage.classList.add('hidden')
@@ -410,10 +426,6 @@ const excludeTags = new Tag(["oO", '1lI'], 'excludesContainer')
 
 includeTags.initialize()
 excludeTags.initialize()
-
-
-
-
 
 
 
